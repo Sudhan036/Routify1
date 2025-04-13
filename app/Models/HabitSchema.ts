@@ -1,11 +1,12 @@
+// habitSchema.ts
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
 // Define the sub-schemas for the nested types
 const FrequencySchema = new Schema({
-  type: { type: String, required: true },
-  days: { type: [String], required: true },
-  number: { type: Number, required: true },
+  type: { type: String, required: true },       // e.g., "daily" or "weekly"
+  days: { type: [String], required: true },     // e.g., ["Mo", "Tu", "We"] or all 7 for daily
+  number: { type: Number, required: true },     // Not shown in your code, but in original schema
 });
 
 const AreaSchema = new Schema({
@@ -25,7 +26,7 @@ const HabitSchema = new Schema({
   icon: { type: String, required: true },
   clerkUserId: { type: String, required: true },
   frequency: { type: [FrequencySchema], required: true },
-  notificationTime: { type: String },
+  notificationTime: { type: String },   // e.g., "8:00 AM"
   isNotificationOn: { type: Boolean, required: true },
   areas: { type: [AreaSchema], required: true, default: [] },
   completedDays: { type: [CompletedDaySchema], required: true, default: [] },

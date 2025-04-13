@@ -1,7 +1,8 @@
+import HabitInsights from "@/app/Components/HabitInsights";
 import HeroSection from "./mainPageComponents/HeroSection";
 import Navbar from "./mainPageComponents/Navbar";
 import Image from "next/image";
-import { useCallback } from "react";
+
 export default function Home() {
   return (
     <div>
@@ -13,8 +14,12 @@ export default function Home() {
           alt="dashboard"
           width={900}
           height={400}
-          className="shadow-xl aspect-auto sm:w-full w-[398px]  rounded-lg max-w-full sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl"
+          className="shadow-xl aspect-auto sm:w-full w-[398px] rounded-lg max-w-full sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl"
         />
+      </div>
+      {/* Render Habit Insights */}
+      <div className="mt-10">
+        <HabitInsights />
       </div>
     </div>
   );

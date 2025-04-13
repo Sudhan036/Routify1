@@ -20,6 +20,7 @@ import {
   faGraduationCap,
   faSortAmountDesc,
   faUsers,
+  faLightbulb, // <-- Newly imported icon for Habit Insights
 } from "@fortawesome/free-solid-svg-icons";
 import {
   faChartSimple,
@@ -112,14 +113,12 @@ const GlobalContext = createContext<GlobalContextType>({
     openAreaForm: false,
     setOpenAreaForm: () => {},
   },
-
   openIconWindowObject: {
     openIconWindow: false,
     setOpenIconWindow: () => {},
     iconSelected: faFlask,
     setIconSelected: () => {},
   },
-
   searchInputObject: {
     searchInput: "",
     setSearchInput: () => {},
@@ -135,10 +134,11 @@ function GlobalContextProvider({ children }: { children: ReactNode }) {
     { name: "All Habits", isSelected: true, icon: faRectangleList },
     { name: "Statistics", isSelected: false, icon: faChartSimple },
     { name: "Areas", isSelected: false, icon: faLayerGroup },
+    // New Habit Insights menu item added after Areas
+    { name: "Habit Insights", isSelected: false, icon: faLightbulb },
   ]);
 
   const [allHabits, setAllHabits] = useState<HabitType[]>([]);
-
   const [darkModeItems, setDarkModeItems] = useState<DarkModeItem[]>([
     { id: 1, icon: faSun, isSelected: true },
     { id: 2, icon: faMoon, isSelected: false },
@@ -176,16 +176,19 @@ function GlobalContextProvider({ children }: { children: ReactNode }) {
   console.log(isLoading);
 
   useEffect(() => {
-    //Fetch data from the server
+    // Prevent execution if user is not loaded or not signed in
+    if (!isLoaded || !isSignedIn || !user?.id) return;
+  
+    // Fetch habits from the server
     const fetchAllHabits = async () => {
       try {
-        const response = await fetch(`/api/habits?clerkId=${user?.id}`);
+        const response = await fetch(`/api/habits?clerkId=${String(user.id)}`);
         if (!response.ok) {
           throw new Error("Failed to fetch habits");
         }
         const data: { habits: HabitType[] } = await response.json();
-
-        //Convert the icon of the habit from string to IconProp
+  
+        // Convert the icon of the habit from string to IconProp
         const updatedHabits = data.habits.map((habit: HabitType) => {
           if (typeof habit.icon === "string") {
             return {
@@ -195,8 +198,8 @@ function GlobalContextProvider({ children }: { children: ReactNode }) {
           }
           return habit;
         });
-
-        //Update the icons in the areas property from string to icon props
+  
+        // Update the icons in the areas property from string to IconProp
         const updatedHabitsWithAreas = updatedHabits.map((habit: HabitType) => {
           const updatedAreas = habit.areas.map((area: AreaType) => {
             if (typeof area.icon === "string") {
@@ -210,12 +213,19 @@ function GlobalContextProvider({ children }: { children: ReactNode }) {
           return { ...habit, areas: updatedAreas };
         });
 
-        // Update the habits array with the updated icons
-        console.log(updatedHabitsWithAreas);
+        // Ensure every habit has a defined completedDays property
+        const updatedHabitsWithDefaultCompletedDays = updatedHabitsWithAreas.map(
+          (habit: HabitType) => ({
+            ...habit,
+            completedDays: habit.completedDays || [],
+          })
+        );
 
-        setAllHabits(updatedHabitsWithAreas);
+        console.log(updatedHabitsWithDefaultCompletedDays);
+
+        setAllHabits(updatedHabitsWithDefaultCompletedDays);
       } catch (error) {
-        console.error("Error fetching projects:", error);
+        console.error("Error fetching habits:", error);
       } finally {
         setIsLoading(false);
       }
@@ -229,10 +239,10 @@ function GlobalContextProvider({ children }: { children: ReactNode }) {
         }
         const data: { areas: AreaType[] } = await response.json();
 
-        //Create the All Area if the user has no areas and the first time the user opens the app
+        // Create the "All" area if the user has no areas and it’s the first time the user opens the app
         if (data.areas.length === 0) {
           const allArea = await addTheAllAreas();
-          //Convert the icon of the area from string to IconProp
+          // Convert the icon of the area from string to IconProp
           if (typeof allArea?.icon === "string") {
             const updatedArea = {
               ...allArea,
@@ -241,10 +251,9 @@ function GlobalContextProvider({ children }: { children: ReactNode }) {
 
             setAllAreas([updatedArea]);
           }
-
           return;
         }
-        //Convert the icons property from string to IconProp
+        // Convert the icons property from string to IconProp
         const updatedAreas = data.areas.map((area: AreaType) => {
           if (typeof area.icon === "string") {
             return {
@@ -256,7 +265,9 @@ function GlobalContextProvider({ children }: { children: ReactNode }) {
         });
 
         setAllAreas(updatedAreas);
-      } catch (error) {}
+      } catch (error) {
+        console.error("Error fetching areas:", error);
+      }
     }
 
     if (isLoaded && isSignedIn) {
@@ -280,25 +291,25 @@ function GlobalContextProvider({ children }: { children: ReactNode }) {
         headers: {
           "Content-Type": "application/json",
         },
-
         body: JSON.stringify(allArea),
       });
 
       if (!response.ok) {
         throw new Error("Failed to add an area");
       }
-      //Extract the _id from the response
+      // Extract the _id from the response
       const data = await response.json();
       const { _id } = data.area;
-      //
-      //Update the _id of the area
+      // Update the _id of the area
       const updatedIdOfArea = { ...allArea, _id: _id };
 
       return updatedIdOfArea;
-    } catch (error) {}
+    } catch (error) {
+      console.error("Error adding area:", error);
+    }
   }
 
-  //Each time the menu items are updated, the sidebar is closed
+  // Each time the menu items are updated, the sidebar is closed
   useEffect(() => {
     setOpenSideBar(false);
     setOpenAreaForm(false);
@@ -307,7 +318,6 @@ function GlobalContextProvider({ children }: { children: ReactNode }) {
     setOpenIconWindow(false);
   }, [menuItems]);
 
-  //Jsx
   return (
     <GlobalContext.Provider
       value={{

@@ -1,5 +1,5 @@
 {
-  "name": "habit-stacker",
+  "name": "Routify",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,25 +9,32 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@clerk/nextjs": "^5.1.0",
+    "@clerk/clerk-sdk-node": "^5.1.6",
+    "@clerk/nextjs": "^6.11.3",
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.5",
-    "@fortawesome/fontawesome-svg-core": "^6.5.2",
+    "@fortawesome/fontawesome-svg-core": "^6.7.2",
     "@fortawesome/free-brands-svg-icons": "^6.5.2",
     "@fortawesome/free-regular-svg-icons": "^6.5.2",
-    "@fortawesome/free-solid-svg-icons": "^6.5.2",
+    "@fortawesome/free-solid-svg-icons": "^6.7.2",
     "@fortawesome/react-fontawesome": "^0.2.2",
     "@mui/icons-material": "^5.15.18",
     "@mui/material": "^5.15.18",
     "@mui/x-date-pickers": "^6.20.0",
-    "apexcharts": "^3.49.1",
-    "dayjs": "^1.11.11",
+    "apexcharts": "^4.4.0",
+    "axios": "^1.8.1",
+    "chart.js": "^4.4.8",
+    "date-fns": "^4.1.0",
+    "dayjs": "^1.11.13",
+    "mongodb": "^6.13.0",
     "mongoose": "^8.4.0",
     "next": "^15.1.7",
-    "react": "^18",
-    "react-apexcharts": "^1.4.1",
+    "react": "^18.3.1",
+    "react-apexcharts": "^1.7.0",
     "react-calendar-heatmap": "^1.9.0",
-    "react-dom": "^18",
+    "react-chartjs-2": "^5.3.0",
+    "react-day-picker": "^9.6.2",
+    "react-dom": "^18.3.1",
     "react-hot-toast": "^2.4.1",
     "react-slick": "^0.30.2",
     "react-time-picker": "^7.0.0",
@@ -48,6 +55,7 @@
     "eslint-config-next": "14.2.3",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.2"
   }
 }
