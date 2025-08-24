@@ -24,7 +24,7 @@
     "apexcharts": "^4.4.0",
     "axios": "^1.8.1",
     "chart.js": "^4.4.8",
-    "date-fns": "^4.1.0",
+    "date-fns": "^3.2.0",
     "dayjs": "^1.11.13",
     "mongodb": "^6.13.0",
     "mongoose": "^8.4.0",
@@ -53,7 +53,9 @@
     "@types/uuid": "^9.0.8",
     "eslint": "^8",
     "eslint-config-next": "14.2.3",
+    "patch-package": "^8.0.0",
     "postcss": "^8",
+    "postinstall-postinstall": "^2.1.0",
     "tailwindcss": "^3.4.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.2"
