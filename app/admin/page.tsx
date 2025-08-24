@@ -25,7 +25,7 @@ export default function AdminPage() {
   }
 
   // Adjust this logic to match your admin authentication
-  const adminEmail = "nadarsudhan4@gmail.com";
+  const adminEmail = "thoratvedant693@gmail.com";
   if (user.emailAddresses[0].emailAddress !== adminEmail) {
     return (
       <div className="p-6 flex items-center justify-center h-screen bg-gray-100">

@@ -8,15 +8,9 @@ import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
 import { format } from "date-fns";
 
-type ActiveUser = {
-  _id: string;
-  email: string;
-  firstName: string;
-};
-
 type Frequency = {
   type: string;
-  days: string[]; // e.g., ["Mo", "Tu", "We"]
+  days: string[];
   number: number;
 };
 
@@ -24,7 +18,7 @@ type Habit = {
   _id: string;
   name: string;
   completedDays: Array<{ date: string }>;
-  frequency?: Frequency[]; // Use frequency field's days array for scheduling
+  frequency?: Frequency[];
 };
 
 type DailyDetail = {
@@ -36,43 +30,23 @@ type DailyDetail = {
 export default function HabitAnalyticsDashboard() {
   const { user, isLoaded } = useUser();
 
-  const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([]);
-  const [selectedUser, setSelectedUser] = useState<ActiveUser | null>(null);
   const [userHabits, setUserHabits] = useState<Habit[]>([]);
-  const [loadingActiveUsers, setLoadingActiveUsers] = useState<boolean>(true);
   const [loadingHabits, setLoadingHabits] = useState<boolean>(false);
 
-  // For calendar & pie chart
+  // Calendar & Pie chart
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [dailyDetail, setDailyDetail] = useState<DailyDetail | null>(null);
   const pieChartRef = useRef<HTMLCanvasElement | null>(null);
   const chartRefPie = useRef<Chart | null>(null);
 
-  // 1. Fetch active users from /api/active-users
+  // 1. Fetch habits for logged-in user
   useEffect(() => {
-    const fetchActiveUsers = async () => {
-      try {
-        const res = await fetch("/api/active-users");
-        if (!res.ok) throw new Error("Failed to fetch active users");
-        const data = await res.json();
-        setActiveUsers(data.users);
-      } catch (error) {
-        console.error("Error fetching active users:", error);
-        toast.error("Error fetching active users");
-      } finally {
-        setLoadingActiveUsers(false);
-      }
-    };
-    fetchActiveUsers();
-  }, []);
+    if (!isLoaded || !user) return;
 
-  // 2. When a user is selected, fetch that user's habits.
-  useEffect(() => {
-    if (!selectedUser) return;
     const fetchUserHabits = async () => {
       setLoadingHabits(true);
       try {
-        const res = await fetch(`/api/habits?clerkId=${selectedUser._id}`);
+        const res = await fetch(`/api/habits?clerkId=${user.id}`);
         if (!res.ok) throw new Error("Failed to fetch habits");
         const data = await res.json();
         setUserHabits(data.habits);
@@ -84,22 +58,17 @@ export default function HabitAnalyticsDashboard() {
       }
     };
     fetchUserHabits();
-    // Reset date and daily detail when switching users.
-    setSelectedDate(undefined);
-    setDailyDetail(null);
-  }, [selectedUser]);
+  }, [user, isLoaded]);
 
-  // 3. Compute daily detail for the selected day using the existing frequency.days field.
+  // 2. Compute daily detail when date changes
   useEffect(() => {
-    if (!selectedUser || !selectedDate || loadingHabits) {
+    if (!user || !selectedDate || loadingHabits) {
       if (chartRefPie.current) chartRefPie.current.destroy();
       setDailyDetail(null);
       return;
     }
-    const formattedDate = format(selectedDate, "yyyy-MM-dd");
 
-    // Convert selected date to a day-of-week abbreviation matching your frequency.days format.
-    // Assume your frequency.days are stored as two-letter abbreviations: "Mo", "Tu", "We", "Th", "Fr", "Sa", "Su".
+    const formattedDate = format(selectedDate, "yyyy-MM-dd");
     const dayMap: Record<string, string> = {
       Mon: "Mo",
       Tue: "Tu",
@@ -111,18 +80,13 @@ export default function HabitAnalyticsDashboard() {
     };
     const dayAbbrev = dayMap[format(selectedDate, "eee")];
 
-    // Filter habits based on frequency.days.
     const todaysHabits = userHabits.filter((habit) => {
-      // If frequency exists and has at least one entry, use its days array.
       if (habit.frequency && habit.frequency.length > 0) {
-        const frequencyDays = habit.frequency[0].days; // e.g., ["Mo", "Tu", "We"]
-        return frequencyDays.includes(dayAbbrev);
+        return habit.frequency[0].days.includes(dayAbbrev);
       }
-      // Otherwise, assume the habit is scheduled daily.
-      return true;
+      return true; // default daily
     });
 
-    // Now compute completions: count habits that have a completion on the selected date.
     const totalExpected = todaysHabits.length;
     let totalCompleted = 0;
     todaysHabits.forEach((habit) => {
@@ -132,19 +96,17 @@ export default function HabitAnalyticsDashboard() {
     });
     const missed = totalExpected - totalCompleted;
     setDailyDetail({ totalExpected, totalCompleted, missed });
-  }, [selectedDate, selectedUser, userHabits, loadingHabits]);
+  }, [selectedDate, user, userHabits, loadingHabits]);
 
-  // 4. Render the pie chart once dailyDetail is computed.
+  // 3. Draw chart
   useEffect(() => {
     if (!dailyDetail) {
       if (chartRefPie.current) chartRefPie.current.destroy();
       return;
     }
-    if (!pieChartRef.current) {
-      console.error("Pie chart canvas element not found via ref");
-      return;
-    }
+    if (!pieChartRef.current) return;
     if (chartRefPie.current) chartRefPie.current.destroy();
+
     chartRefPie.current = new Chart(pieChartRef.current, {
       type: "pie",
       data: {
@@ -158,18 +120,13 @@ export default function HabitAnalyticsDashboard() {
           },
         ],
       },
-      options: {
-        responsive: true,
-        plugins: { legend: { position: "bottom" } },
-      },
+      options: { responsive: true, plugins: { legend: { position: "bottom" } } },
     });
   }, [dailyDetail]);
 
-  if (loadingActiveUsers || !isLoaded) {
-    return <p>Loading dashboard...</p>;
-  }
+  if (!isLoaded) return <p>Loading dashboard...</p>;
 
-  // Helper: Get last completed date for each habit (for table display)
+  // Helper for last completion
   const getLastCompletedDate = (habit: Habit) => {
     if (!habit.completedDays || habit.completedDays.length === 0) return "N/A";
     const sortedDates = [...habit.completedDays].sort(
@@ -184,34 +141,13 @@ export default function HabitAnalyticsDashboard() {
         Habit Analytics Dashboard
       </h1>
 
-      {/* Active Users List */}
-      <div className="mb-6">
-        <h2 className="text-2xl font-semibold">Active Users</h2>
-        <ul className="mt-2 space-y-2">
-          {activeUsers.map((usr) => (
-            <li
-              key={usr._id}
-              className={`p-2 cursor-pointer rounded-md hover:bg-red-100 ${
-                selectedUser?._id === usr._id ? "bg-red-200" : "bg-white"
-              }`}
-              onClick={() => {
-                setSelectedUser(usr);
-                setSelectedDate(undefined);
-              }}
-            >
-              <span className="font-medium">{usr.firstName}</span> ({usr.email})
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {selectedUser && (
+      {user && (
         <div>
           <h2 className="text-2xl font-semibold mb-4">
-            Habit Activity for {selectedUser.firstName}
+            Habit Activity for {user.firstName || "You"}
           </h2>
 
-          {/* Habit Table */}
+          {/* Habits Table */}
           <div className="overflow-x-auto mb-4">
             <table className="min-w-full border border-gray-300 rounded-lg shadow-md overflow-hidden">
               <thead>
@@ -228,28 +164,23 @@ export default function HabitAnalyticsDashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
-                {userHabits.map((habit) => {
-                  const totalCompletions = habit.completedDays.length;
-                  const lastCompleted = getLastCompletedDate(habit);
-                  return (
-                    <tr key={habit._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-gray-900">{habit.name}</td>
-                      <td className="px-6 py-4 text-center text-gray-700">
-                        {totalCompletions}
-                      </td>
-                      <td className="px-6 py-4 text-center text-gray-700">
-                        {lastCompleted}
-                      </td>
-                    </tr>
-                  );
-                })}
+                {userHabits.map((habit) => (
+                  <tr key={habit._id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 text-gray-900">{habit.name}</td>
+                    <td className="px-6 py-4 text-center text-gray-700">
+                      {habit.completedDays.length}
+                    </td>
+                    <td className="px-6 py-4 text-center text-gray-700">
+                      {getLastCompletedDate(habit)}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
 
-          {/* Calendar & Pie Chart Side by Side */}
+          {/* Calendar & Pie Chart */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
-            {/* Calendar on Left */}
             <div className="flex flex-col border border-red-300 p-4 rounded-md h-full">
               <DayPicker
                 mode="single"
@@ -261,7 +192,6 @@ export default function HabitAnalyticsDashboard() {
               />
             </div>
 
-            {/* Pie Chart on Right */}
             {selectedDate && dailyDetail && (
               <div className="flex flex-col bg-white border border-red-300 rounded-md p-4 h-full items-center justify-center">
                 <h3 className="text-xl font-bold mb-2 text-center">

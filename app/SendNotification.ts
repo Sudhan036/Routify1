@@ -1,7 +1,7 @@
 // /src/SendNotification.ts
 export function sendNotifications(habitName: string) {
   if ("Notification" in window && Notification.permission === "granted") {
-    const notification = new Notification("Habit Stacker", {
+    const notification = new Notification("Routify", {
       body: `It's time to do your habit: ${habitName}`,
     });
 
